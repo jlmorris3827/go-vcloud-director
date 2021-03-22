@@ -6,6 +6,7 @@ package govcd
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -24,6 +25,12 @@ type VCDClient struct {
 	Client      Client  // Client for the underlying VCD instance
 	sessionHREF url.URL // HREF for the session API
 	QueryHREF   url.URL // HREF for the query API
+}
+type OauthTokenRequest struct {
+	ClientId     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	GrantType    string `json:"grant_type"`
+	Scope        string `json:"scope"`
 }
 
 func (vcdCli *VCDClient) vcdloginurl() error {
@@ -123,6 +130,49 @@ func (vcdCli *VCDClient) vcdAuthorize(user, pass, org string) (*http.Response, e
 	return resp, nil
 }
 
+func (vcdCli *VCDClient) oauthAuthorize(clientId, clientSecret string) (*http.Response, error) {
+	util.Logger.Printf("[oauthAuthorize]: server %s", vcdCli.Client.OauthUrl)
+	var missingItems []string
+	if clientId == "" {
+		missingItems = append(missingItems, "clientId")
+	}
+	if clientSecret == "" {
+		missingItems = append(missingItems, "clientSecret")
+	}
+	if len(missingItems) > 0 {
+		return nil, fmt.Errorf("authorization is not possible because of these missing items: %v", missingItems)
+	}
+
+	tokReq := OauthTokenRequest{
+		ClientId:     clientId,
+		ClientSecret: clientSecret,
+		GrantType:    "CERT",
+		Scope:        "openid",
+	}
+	byt, _ := json.Marshal(tokReq)
+	req, err := http.NewRequest("GET", vcdCli.Client.OauthUrl, strings.NewReader(string(byt)))
+	if err != nil {
+		return nil, fmt.Errorf("Unable to create oauth http request: %v", err)
+	}
+
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("Error in oauth client request do: %v", err)
+	}
+	defer resp.Body.Close()
+	return resp, nil
+}
+
 // NewVCDClient initializes VMware vCloud Director client with reasonable defaults.
 // It accepts functions of type VCDClientOption for adjusting defaults.
 func NewVCDClient(vcdEndpoint url.URL, insecure bool, options ...VCDClientOption) *VCDClient {
@@ -186,10 +236,17 @@ func (vcdCli *VCDClient) GetAuthResponse(username, password, org string) (*http.
 			return nil, fmt.Errorf("error authorizing SAML: %s", err)
 		}
 	default:
-		// Authorize
-		resp, err = vcdCli.vcdAuthorize(username, password, org)
-		if err != nil {
-			return nil, fmt.Errorf("error authorizing: %s", err)
+		if vcdCli.Client.OauthUrl != "" {
+			resp, err = vcdCli.oauthAuthorize(username, password)
+			if err != nil {
+				return nil, fmt.Errorf("error pauth authorizing: %s", err)
+			}
+		} else {
+			// Authorize
+			resp, err = vcdCli.vcdAuthorize(username, password, org)
+			if err != nil {
+				return nil, fmt.Errorf("error authorizing: %s", err)
+			}
 		}
 	}
 
@@ -293,6 +350,20 @@ func WithSamlAdfs(useSaml bool, customAdfsRptId string) VCDClientOption {
 func WithHttpUserAgent(userAgent string) VCDClientOption {
 	return func(vcdClient *VCDClient) error {
 		vcdClient.Client.UserAgent = userAgent
+		return nil
+	}
+}
+
+func WithOauthUrl(oauthUrl string) VCDClientOption {
+	return func(vcdClient *VCDClient) error {
+		vcdClient.Client.OauthUrl = oauthUrl
+		return nil
+	}
+}
+
+func WithClientCerfile(certfile string) VCDClientOption {
+	return func(vcdClient *VCDClient) error {
+		vcdClient.Client.ClientCertfile = certfile
 		return nil
 	}
 }

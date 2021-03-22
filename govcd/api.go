@@ -52,6 +52,10 @@ type Client struct {
 	UserAgent string
 
 	supportedVersions SupportedVersions // Versions from /api/versions endpoint
+
+	// OAUTH
+	OauthUrl       string
+	ClientCertfile string
 }
 
 // AuthorizationHeader header key used by default to set the authorization token.
