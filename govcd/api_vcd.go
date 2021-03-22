@@ -6,7 +6,6 @@ package govcd
 
 import (
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -25,12 +24,6 @@ type VCDClient struct {
 	Client      Client  // Client for the underlying VCD instance
 	sessionHREF url.URL // HREF for the session API
 	QueryHREF   url.URL // HREF for the query API
-}
-type OauthTokenRequest struct {
-	ClientId     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-	GrantType    string `json:"grant_type"`
-	Scope        string `json:"scope"`
 }
 
 func (vcdCli *VCDClient) vcdloginurl() error {
@@ -142,26 +135,22 @@ func (vcdCli *VCDClient) oauthAuthorize(clientId, clientSecret string) (*http.Re
 	if len(missingItems) > 0 {
 		return nil, fmt.Errorf("authorization is not possible because of these missing items: %v", missingItems)
 	}
-
-	tokReq := OauthTokenRequest{
-		ClientId:     clientId,
-		ClientSecret: clientSecret,
-		GrantType:    "CERT",
-		Scope:        "openid",
-	}
-	byt, _ := json.Marshal(tokReq)
-	req, err := http.NewRequest("GET", vcdCli.Client.OauthUrl, strings.NewReader(string(byt)))
+	req, err := http.NewRequest("POST", vcdCli.Client.OauthUrl, nil)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to create oauth http request: %v", err)
 	}
-
+	form := url.Values{}
+	form.Add("client_id", clientId)
+	form.Add("client_secret", clientSecret)
+	form.Add("grant_type", "CERT")
+	form.Add("scope", "openid")
+	req.PostForm = form
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 	}
-
 	if err != nil {
 		return nil, err
 	}
