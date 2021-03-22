@@ -139,12 +139,11 @@ func (vcdCli *VCDClient) oauthAuthorize(clientId, clientSecret string) (*http.Re
 	if err != nil {
 		return nil, fmt.Errorf("Unable to create oauth http request: %v", err)
 	}
-	form := url.Values{}
-	form.Add("client_id", clientId)
-	form.Add("client_secret", clientSecret)
-	form.Add("grant_type", "CERT")
-	form.Add("scope", "openid")
-	req.PostForm = form
+	req.Form = make(url.Values)
+	req.Form.Add("client_id", clientId)
+	req.Form.Add("client_secret", clientSecret)
+	req.Form.Add("grant_type", "CERT")
+	req.Form.Add("scope", "openid")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	client := &http.Client{
 		Transport: &http.Transport{
