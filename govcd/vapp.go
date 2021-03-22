@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/vmware/go-vcloud-director/v2/types/v56"
-	"github.com/vmware/go-vcloud-director/v2/util"
+	"github.com/jlmorris3827/go-vcloud-director/v2/types/v56"
+	"github.com/jlmorris3827/go-vcloud-director/v2/util"
 )
 
 type VApp struct {
@@ -250,7 +250,7 @@ func addNewVMW(vapp *VApp, name string, vappTemplate VAppTemplate,
 
 // ========================= issue#252 ==================================
 // TODO: To be refactored, handling networks better. See issue#252 for details
-// https://github.com/vmware/go-vcloud-director/issues/252
+// https://github.com/jlmorris3827/go-vcloud-director/issues/252
 // ======================================================================
 func (vapp *VApp) RemoveVM(vm VM) error {
 
