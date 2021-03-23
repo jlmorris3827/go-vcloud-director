@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/jlmorris3827/go-vcloud-director/v2/types/v56"
-	"github.com/jlmorris3827/go-vcloud-director/v2/util"
+	"github.com/vmware/go-vcloud-director/v2/types/v56"
+	"github.com/vmware/go-vcloud-director/v2/util"
 )
 
 type Org struct {

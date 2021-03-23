@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/jlmorris3827/go-vcloud-director/v2/types/v56"
+	"github.com/vmware/go-vcloud-director/v2/types/v56"
 )
 
 // orgInfoType is the basic information about an organization (needed for tenant context)

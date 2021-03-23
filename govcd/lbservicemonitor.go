@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/jlmorris3827/go-vcloud-director/v2/types/v56"
+	"github.com/vmware/go-vcloud-director/v2/types/v56"
 )
 
 // CreateLbServiceMonitor creates a load balancer service monitor based on mandatory fields. It is a synchronous
